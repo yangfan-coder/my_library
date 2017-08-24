@@ -5,15 +5,31 @@
  */
 
 // 每次定义的时候new一个新的对象
-var $ = function (_this){
-	return new Base(_this);
+var $ = function (ages){
+	return new Base(ages);
 }
 
 // 定义一个对象
-function Base(_this){
-	this.elements = [];			// 存放节点的数组 ==>私有化
-	if(_this != undefined) {	// _this or undefined is objct,跟typeof返回的字符串不用，谨记
-		this.elements[0] = _this;
+function Base(ages){
+	this.elements = [];					// 存放节点的数组 ==>私有化
+	if(typeof ages == "string"){
+		switch (ages.charAt(0)) {
+			case "#":
+				this.elements.push(this.GetId(ages.substring(1)))
+				break;
+			case ".":
+				this.elements = this.GetClass(ages.substring(1))
+				break;
+			default:
+				this.elements = this.GetName(ages);
+				break;
+		}
+
+	}else if(typeof ages == "object"){
+
+		if(ages != undefined) {		// ages or undefined is objct,跟typeof返回的字符串不用，谨记
+			this.elements[0] = ages	;
+		}
 	}
 };
 
@@ -21,32 +37,38 @@ function Base(_this){
  定义原型的API
 */
 
+
 // 查找id节点
 Base.prototype.GetId = function (id){
-	this.elements.push(document.getElementById(id))
-	return this;	
+	return document.getElementById(id);
 }
 
 // 查找name节点
-Base.prototype.GetName = function (name,parents){
+Base.prototype.GetName = function (name,parentNode){
 	var node = null;
-	if(arguments.length == 2) {
-		node = document.getElementById(parents);
+	var result = [];
+
+	if(parentNode != undefined) {
+		node = parentNode;
 	}else {
 		node = document;
 	}
+
 	var nameList = node.getElementsByTagName(name);
 	for(var i = 0;i <nameList.length; i++){
-		this.elements.push(nameList[i]);
+		result.push(nameList[i]);
 	}
-	return this;	
+
+	return result;
 }
 
 // 查找class节点
-Base.prototype.GetClass = function (cls,parents){
+Base.prototype.GetClass = function (cls,parentNode){
 	var node = null;
-	if(arguments.length == 2) {
-		node = document.getElementById(parents);
+	var result = [];
+
+	if(parentNode != undefined) {
+		node = parentNode;
 	}else {
 		node = document;
 	}
@@ -55,19 +77,56 @@ Base.prototype.GetClass = function (cls,parents){
 	for( var i = 0; i< lis.length; i++){
 
 		if( re.test(lis[i].className)){
-			this.elements.push(lis[i]);
+			result.push(lis[i]);
 		}
 	}
-	return this;
+	return result;
 }
 
-// 查找某一个节点
+// 查找某一个节点，并返回这个节点对象
+Base.prototype.getElement = function(mun){
+	return this.elements[mun];
+}
+
+// 查找某一个节点，并且返回Base对象
 Base.prototype.eq = function(mun){
 	var element = this.elements[mun];
 	this.elements = [];
 	this.elements[0] = element;
 	return this;
 }
+
+// 设置css选择期的子节点
+Base.prototype.find = function(str){
+	var result = []; // 临时变量
+	for(var i = 0; i<this.elements.length; i++){
+		if(typeof str == "string"){
+			switch (str.charAt(0)) {
+				case "#":
+					result.push(this.GetId(str.substring(1)))
+					break;
+				case ".":
+					var all = this.GetClass(str.substring(1),this.elements[i]);
+					var j = 0;
+					while ( j < all.length) {
+						result.push(all[j])
+						j++;
+					}
+					break;
+				default:
+					var temps = this.GetName(str,this.elements[i]);
+					var j = 0;
+					while ( j < temps.length) {
+						result.push(temps[j])
+						j++;
+					}
+					break;
+			}
+		}
+	}
+	this.elements = result;
+	return this;
+};
 
 // 添加link或style的css规则
 Base.prototype.addRule = function(mun,selectorText,cssText,position){
@@ -208,9 +267,7 @@ Base.prototype.unlook = function(){
 	return this;
 };
 
-
-// // 拖拽
-// Base.prototype.drag = function(obj){
-	
-// 	return this;
-// }
+// 插件的入口
+Base.prototype.extend = function(name,fn){
+	Base.prototype[name] = fn;
+};
